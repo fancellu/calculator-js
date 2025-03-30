@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modern Calculator</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="calculator">
+    <div class="display">
+        <div class="mode-display">Mode: <span id="current-mode">Standard</span> | Base: <span id="current-base">DEC</span></div>
+        <input type="text" id="screen" value="0" disabled>
+    </div>
+
+    <div class="controls">
+        <label for="mode-select">Mode:</label>
+        <select id="mode-select">
+            <option value="standard" selected>Standard</option>
+            <option value="scientific">Scientific</option>
+            <option value="programmer">Programmer</option>
+        </select>
+        <div id="base-controls" class="programmer-feature hidden">
+            <label>Base:</label>
+            <button data-base="10" class="base-btn active">DEC</button>
+            <button data-base="16" class="base-btn">HEX</button>
+            <button data-base="2" class="base-btn">BIN</button>
+            <button data-base="8" class="base-btn">OCT</button>
+        </div>
+    </div>
+
+    <div class="buttons">
+        <!-- Row 1: Scientific / Programmer -->
+        <button class="scientific-feature hidden" data-action="function" data-value="sin">sin</button>
+        <button class="scientific-feature hidden" data-action="function" data-value="cos">cos</button>
+        <button class="scientific-feature hidden" data-action="function" data-value="tan">tan</button>
+        <button class="programmer-feature hidden" data-action="bitwise" data-value="<<">Lsh</button> <!-- Prog -->
+        <button class="programmer-feature hidden" data-action="bitwise" data-value=">>">Rsh</button> <!-- Prog -->
+
+        <!-- Row 2: Scientific / Programmer -->
+        <button class="scientific-feature hidden" data-action="function" data-value="sqrt">√</button>
+        <button class="scientific-feature hidden" data-action="operator" data-value="pow">xʸ</button>
+        <button class="scientific-feature hidden" data-action="pi" data-value="pi">π</button>
+        <button class="programmer-feature hidden" data-action="bitwise" data-value="&">AND</button> <!-- Prog -->
+        <button class="programmer-feature hidden" data-action="bitwise" data-value="|">OR</button>  <!-- Prog -->
+
+        <!-- Row 3: Scientific / Programmer -->
+        <button class="scientific-feature hidden" data-action="function" data-value="log">log</button>
+        <button class="scientific-feature hidden" data-action="function" data-value="ln">ln</button>
+        <button class="scientific-feature hidden" data-action="parenthesis" data-value="(">(</button>
+        <button class="scientific-feature hidden" data-action="parenthesis" data-value=")">)</button>
+        <button class="programmer-feature hidden" data-action="bitwise" data-value="^">XOR</button> <!-- Prog -->
+        <button class="programmer-feature hidden" data-action="bitwise" data-value="~">NOT</button> <!-- Prog -->
+
+        <!-- Row 4: Programmer Hex Group -->
+        <!-- This row ONLY appears in Programmer mode -->
+        <button class="programmer-feature hidden hex-digit" data-action="number" data-value="A">A</button>
+        <button class="programmer-feature hidden hex-digit" data-action="number" data-value="B">B</button>
+        <button class="programmer-feature hidden hex-digit" data-action="number" data-value="C">C</button>
+        <button class="programmer-feature hidden hex-digit" data-action="number" data-value="D">D</button>
+        <button class="programmer-feature hidden hex-digit" data-action="number" data-value="E">E</button>
+        <button class="programmer-feature hidden hex-digit" data-action="number" data-value="F">F</button>
+
+        <!-- Row 5: Standard Top Row (Shared) -->
+        <button data-action="clear" class="span-2">AC</button> <!-- Span 2 columns -->
+        <!-- <button data-action="placeholder" class="hidden"></button> --> <!-- Placeholder if needed -->
+        <button data-action="delete">DEL</button>
+        <button data-action="operator" data-value="/" class="operator">÷</button>
+
+        <!-- Row 6: Standard Numbers / Operator (Shared) -->
+        <button data-action="number" data-value="7" class="digit">7</button>
+        <button data-action="number" data-value="8" class="digit">8</button>
+        <button data-action="number" data-value="9" class="digit">9</button>
+        <button data-action="operator" data-value="*" class="operator">×</button>
+
+        <!-- Row 7: Standard Numbers / Operator (Shared) -->
+        <button data-action="number" data-value="4" class="digit">4</button>
+        <button data-action="number" data-value="5" class="digit">5</button>
+        <button data-action="number" data-value="6" class="digit">6</button>
+        <button data-action="operator" data-value="-" class="operator">−</button>
+
+        <!-- Row 8: Standard Numbers / Operator (Shared) -->
+        <button data-action="number" data-value="1" class="digit">1</button>
+        <button data-action="number" data-value="2" class="digit">2</button>
+        <button data-action="number" data-value="3" class="digit">3</button>
+        <button data-action="operator" data-value="+" class="operator">+</button>
+
+        <!-- Row 9: Standard Bottom Row / Equals (Shared) -->
+        <button data-action="sign">+/-</button>
+        <button data-action="number" data-value="0" class="digit">0</button>
+        <button data-action="decimal" data-value="." class="decimal">.</button>
+        <button data-action="equals" class="equals"> = </button> <!-- Removed span, placed in last col -->
+
+    </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
