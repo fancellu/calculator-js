@@ -1,4 +1,4 @@
-// Complete script.js with formatResult
+// Complete script.js
 
 document.addEventListener('DOMContentLoaded', () => {
     // --- DOM Elements ---
@@ -10,6 +10,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const baseControls = document.getElementById('base-controls');
     const baseButtons = baseControls.querySelectorAll('.base-btn');
     const allButtons = document.querySelectorAll('.buttons button');
+    const themeCheckbox = document.getElementById('theme-checkbox');
+    const bodyElement = document.body; // Get the body element
 
     // --- State Variables ---
     let internalCurrentInput = '0'; // ALWAYS stores the value as a base-10 string
@@ -26,67 +28,69 @@ document.addEventListener('DOMContentLoaded', () => {
             displayValue = 'Error';
         } else if (currentMode === 'programmer') {
             try {
-                displayValue = BigInt(internalCurrentInput).toString(currentBase).toUpperCase();
+                // --- CORRECTED PART ---
+                // Directly parse the internal base-10 string to BigInt
+                // Avoid intermediate Number() conversion which can lose precision or fail
+                const valueAsBigInt = BigInt(internalCurrentInput);
+                displayValue = valueAsBigInt.toString(currentBase).toUpperCase();
+                // --- END CORRECTION ---
             } catch (e) {
-                console.error("Error converting internal value for display:", e);
-                internalCurrentInput = 'Error';
+                console.error("Error converting internal value for programmer display:", e, internalCurrentInput);
+                internalCurrentInput = 'Error'; // Mark internal state as error if conversion fails
                 displayValue = 'Error';
             }
         } else {
             // Standard/Scientific: display the internal (base-10) value
-            // Apply formatting *only for display* if needed (e.g., separators)
-            // but the stored internalCurrentInput remains the clean string.
             displayValue = internalCurrentInput;
         }
-        screen.value = displayValue;
-        updateButtonStates();
+        screen.value = displayValue; // Update the input field value
+        updateButtonStates(); // Update button states AFTER potential display changes
     }
 
-    // --- NEW: Formatting Function ---
+    // --- Formatting Function ---
     function formatResult(result) {
-        // Handle BigInt results separately (no rounding needed)
         if (typeof result === 'bigint') {
             return result.toString(10); // Keep as base-10 BigInt string internally
         }
-
-        // Handle standard numbers (potential floats)
         if (typeof result === 'number') {
             if (!isFinite(result)) {
                 console.warn("Formatting non-finite number:", result);
                 return "Error";
             }
-            // Round to handle floating-point inaccuracies
             const roundedResult = parseFloat(result.toFixed(12));
-            // Convert the cleaned-up number back into the standard base-10 string
             return roundedResult.toString(10);
         }
-
-        // Fallback for unexpected types
         console.error("Unexpected type in formatResult:", typeof result, result);
         return "Error";
     }
-
 
     // --- Input Handling ---
     function appendNumber(numberChar) {
         if (currentMode === 'programmer' && !isValidForBase(numberChar, currentBase)) {
             return;
         }
-        const currentDisplay = (shouldResetScreen || displayValue === '0') ? '' : displayValue;
-        const newDisplayValue = currentDisplay + numberChar;
-        if (newDisplayValue.length > 32) return;
+        const currentDisplay = (shouldResetScreen || displayValue === '0' || displayValue === 'Error') ? '' : displayValue;
+        // Prevent leading zeros unless it's the only digit or after a decimal
+        let newDisplayValue = currentDisplay + numberChar;
+        if(currentMode !== 'programmer' && !newDisplayValue.includes('.') && newDisplayValue.startsWith('0') && newDisplayValue.length > 1) {
+            newDisplayValue = newDisplayValue.substring(1);
+        }
+
+        if (newDisplayValue.length > 32) return; // Limit input length
 
         try {
             if (currentMode === 'programmer') {
                 if (newDisplayValue === '') {
                     internalCurrentInput = '0';
                 } else {
+                    // Parse the potentially non-base-10 display string back to base-10 BigInt string
                     internalCurrentInput = BigInt(parseInt(newDisplayValue, currentBase)).toString(10);
                 }
             } else {
+                // Standard/Scientific: The new display value *is* the base-10 value
                 internalCurrentInput = newDisplayValue === '' ? '0' : newDisplayValue;
             }
-            shouldResetScreen = false;
+            shouldResetScreen = false; // We've started typing a new number
         } catch (e) {
             console.error("Error parsing appended number:", e);
             internalCurrentInput = 'Error';
@@ -95,22 +99,22 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function appendDecimal() {
-        if (currentMode === 'programmer' || internalCurrentInput.includes('.')) return;
-        if (shouldResetScreen) {
+        if (currentMode === 'programmer') return;
+        if (shouldResetScreen) { // If starting after calculation/function
             internalCurrentInput = '0.';
             shouldResetScreen = false;
-        } else {
+        } else if (!internalCurrentInput.includes('.')) { // Only add if no decimal exists
             internalCurrentInput += '.';
+            shouldResetScreen = false; // Ensure flag is off if just adding decimal
         }
         updateDisplay();
     }
 
     function deleteLast() {
-        if (shouldResetScreen) return;
+        if (shouldResetScreen) return; // Don't delete if result is shown
         let currentDisplay = displayValue;
         if (currentDisplay === 'Error') {
-            clearAll();
-            return;
+            clearAll(); return;
         }
         let newDisplayValue = currentDisplay.slice(0, -1);
 
@@ -121,7 +125,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (currentMode === 'programmer') {
                     internalCurrentInput = BigInt(parseInt(newDisplayValue, currentBase)).toString(10);
                 } else {
-                    internalCurrentInput = newDisplayValue;
+                    internalCurrentInput = newDisplayValue; // Already base-10
                 }
             } catch (e) {
                 console.error("Error parsing after delete:", e);
@@ -142,20 +146,27 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Operations ---
     function chooseOperation(op) {
         if (internalCurrentInput === 'Error') return;
-        if (op === '~') {
+
+        if (op === '~') { // Handle unary NOT immediately
             handleFunction(op);
             return;
         }
+
+        // If an operation is pending and a second operand has been entered, calculate first
         if (operation !== null && internalPreviousInput !== '' && !shouldResetScreen) {
-            if (!calculate()) return;
+            if (!calculate()) return; // Stop if intermediate calculation failed
         }
-        internalPreviousInput = internalCurrentInput;
-        operation = op;
-        shouldResetScreen = true;
+        // If switching operation after entering first number, just update operation
+        // Otherwise, store state for next part
+        if (internalCurrentInput !== 'Error') { // Ensure we don't store "Error" as previous input
+            internalPreviousInput = internalCurrentInput;
+            operation = op;
+            shouldResetScreen = true; // Expecting next operand
+        }
     }
 
     function calculate() {
-        // Guard clauses from previous version...
+        // Guard clauses
         if (operation === null || internalPreviousInput === '') return false;
         if (shouldResetScreen) { console.log("Calculate: Second operand not entered."); return false; }
         if (internalCurrentInput === 'Error') return false;
@@ -168,15 +179,15 @@ document.addEventListener('DOMContentLoaded', () => {
             const current = useBigInt ? BigInt(internalCurrentInput) : parseFloat(internalCurrentInput);
 
             switch (operation) {
-                // Standard Arithmetic
+                // Arithmetic
                 case '+': result = prev + current; break;
                 case '-': result = prev - current; break;
                 case '*': result = prev * current; break;
                 case '/':
                     if (current === 0 || current === 0n) throw new Error("Division by zero");
-                    result = useBigInt ? (prev / current) : (prev / current);
+                    result = useBigInt ? (prev / current) : (prev / current); // BigInt is integer division
                     break;
-                // Programmer Bitwise
+                // Bitwise (Programmer)
                 case '&': if (!useBigInt) throw new Error("& requires Programmer mode"); result = prev & current; break;
                 case '|': if (!useBigInt) throw new Error("| requires Programmer mode"); result = prev | current; break;
                 case '^': if (!useBigInt) throw new Error("^ requires Programmer mode"); result = prev ^ current; break;
@@ -189,11 +200,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (typeof result === 'number' && !isFinite(result)) throw new Error("Result is Infinity or NaN");
 
-            // --- MODIFIED HERE: Use formatResult ---
-            internalCurrentInput = formatResult(result);
-            // --- End Modification ---
+            internalCurrentInput = formatResult(result); // Format and store result
 
-            internalPreviousInput = '';
+            internalPreviousInput = ''; // Clear state after successful calculation
             operation = null;
             shouldResetScreen = true;
             updateDisplay();
@@ -202,7 +211,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             console.error("Calculation Error:", error);
             internalCurrentInput = 'Error';
-            internalPreviousInput = '';
+            internalPreviousInput = ''; // Reset state on error
             operation = null;
             shouldResetScreen = true;
             updateDisplay();
@@ -214,29 +223,41 @@ document.addEventListener('DOMContentLoaded', () => {
         if (internalCurrentInput === 'Error') return;
 
         let result;
+        // Determine if BigInt needed (only for '~') or if float needed
         const useBigInt = (func === '~');
+        const isProgrammerOnlyFunc = useBigInt; // Add other programmer funcs here if any
+
+        // Prevent scientific functions in programmer mode and vice-versa
+        if (currentMode === 'programmer' && !isProgrammerOnlyFunc) {
+            console.warn(`Function ${func} not available in Programmer mode.`);
+            return;
+        }
+        if (currentMode !== 'programmer' && isProgrammerOnlyFunc) {
+            console.warn(`Function ${func} only available in Programmer mode.`);
+            return;
+        }
+
 
         try {
+            // Parse input based on whether function uses BigInt or float
             const value = useBigInt ? BigInt(internalCurrentInput) : parseFloat(internalCurrentInput);
 
             switch (func) {
-                case '~': result = ~value; break; // Bitwise NOT
-
-                // Scientific (ensure value is not BigInt)
-                case 'sqrt': if (useBigInt || value < 0) throw new Error("Invalid input for sqrt"); result = Math.sqrt(value); break;
-                case 'sin': if (useBigInt) throw new Error("Invalid input for sin"); result = Math.sin(degreesToRadians(value)); break;
-                case 'cos': if (useBigInt) throw new Error("Invalid input for cos"); result = Math.cos(degreesToRadians(value)); break;
-                case 'tan': if (useBigInt) throw new Error("Invalid input for tan"); result = Math.tan(degreesToRadians(value)); break;
-                case 'log': if (useBigInt || value <= 0) throw new Error("Invalid input for log"); result = Math.log10(value); break;
-                case 'ln': if (useBigInt || value <= 0) throw new Error("Invalid input for ln"); result = Math.log(value); break;
+                // Programmer
+                case '~': result = ~value; break;
+                // Scientific
+                case 'sqrt': if (value < 0) throw new Error("Invalid input for sqrt"); result = Math.sqrt(value); break;
+                case 'sin': result = Math.sin(degreesToRadians(value)); break;
+                case 'cos': result = Math.cos(degreesToRadians(value)); break;
+                case 'tan': result = Math.tan(degreesToRadians(value)); break;
+                case 'log': if (value <= 0) throw new Error("Invalid input for log"); result = Math.log10(value); break;
+                case 'ln': if (value <= 0) throw new Error("Invalid input for ln"); result = Math.log(value); break;
                 default: throw new Error(`Unknown function: ${func}`);
             }
 
-            // --- MODIFIED HERE: Use formatResult ---
-            internalCurrentInput = formatResult(result);
-            // --- End Modification ---
+            internalCurrentInput = formatResult(result); // Format and store result
 
-            internalPreviousInput = '';
+            internalPreviousInput = ''; // Reset state after function
             operation = null;
             shouldResetScreen = true;
 
@@ -251,90 +272,66 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Mode & Base Switching ---
     function changeMode(newMode) {
-        // --- Preserve Value Step 1: Store current value ---
-        let preservedValue = internalCurrentInput; // Store the current base-10 value
-        const oldMode = currentMode; // Keep track of the mode we are coming from
-
-        // --- Basic Mode Update ---
-        currentMode = newMode; // Set the new mode state
+        let preservedValue = internalCurrentInput;
+        const oldMode = currentMode;
+        currentMode = newMode;
         currentModeDisplay.textContent = newMode.charAt(0).toUpperCase() + newMode.slice(1);
 
-        // Show/Hide relevant UI elements first
+        // --- Simplified Toggle UI visibility ---
         document.querySelectorAll('.scientific-feature').forEach(el => el.classList.toggle('hidden', newMode !== 'scientific'));
+        // This line now handles ALL programmer features, including the base controls container
         document.querySelectorAll('.programmer-feature').forEach(el => el.classList.toggle('hidden', newMode !== 'programmer'));
-        baseControls.classList.toggle('hidden', newMode !== 'programmer');
-        const buttonsGrid = document.querySelector('.buttons');
-        buttonsGrid.className = 'buttons'; // Reset layout classes
-        buttonsGrid.classList.add(`mode-${newMode}`); // Add mode class for CSS if needed
+        // REMOVED the redundant line: baseControls.classList.toggle(...)
+        // --- End Simplified Toggle ---
 
-        // --- Reset Calculation State (but keep value) ---
-        internalPreviousInput = ''; // Clear previous operand
-        operation = null;         // Clear pending operation
-        shouldResetScreen = true; // Display the preserved value, but next number input will overwrite
+        // CSS might adjust layout based on body class or button visibility
 
-        // --- Preserve Value Step 2: Adjust value if needed ---
+        // Reset calculation state but preserve value
+        internalPreviousInput = '';
+        operation = null;
+        shouldResetScreen = true;
+
+        // Adjust preserved value if needed
         if (preservedValue === 'Error') {
-            // If the value was already Error, reset it to 0 when changing mode
             internalCurrentInput = '0';
         } else {
-            internalCurrentInput = preservedValue; // Start with the preserved value
+            internalCurrentInput = preservedValue; // Start with preserved value
 
-            // Handle specific transitions:
             if (newMode === 'programmer' && (oldMode === 'standard' || oldMode === 'scientific')) {
-                // Switching TO Programmer FROM Standard/Scientific: Truncate decimals
-                if (internalCurrentInput.includes('.')) {
-                    try {
-                        const num = parseFloat(internalCurrentInput);
-                        // Use Math.trunc to remove decimal part, then convert back to string
-                        internalCurrentInput = Math.trunc(num).toString();
-                    } catch (e) {
-                        console.error("Error truncating decimal for Programmer mode:", e);
-                        internalCurrentInput = '0'; // Reset to 0 on error
-                    }
-                }
-                // Ensure it's a valid integer representation (e.g., handles potential "NaN" if parse failed)
+                // Truncate decimals when entering programmer mode
                 try {
-                    BigInt(internalCurrentInput); // Test if it can be BigInt
-                } catch {
-                    internalCurrentInput = '0'; // Reset if not valid integer string
-                }
-
-            } else if ((newMode === 'standard' || newMode === 'scientific') && oldMode === 'programmer') {
-                // Switching FROM Programmer TO Standard/Scientific:
-                // Value is already base-10 string. Check if it's too large? (Optional)
-                // For now, we assume standard JS number limits are acceptable.
-                // Potentially very large BigInts might lose precision here.
-                try {
-                    // Test if it's within safe integer range for standard numbers (optional check)
-                    const num = BigInt(internalCurrentInput);
-                    if (num > Number.MAX_SAFE_INTEGER || num < Number.MIN_SAFE_INTEGER) {
-                        console.warn("Large integer from Programmer mode may lose precision in Standard/Scientific mode.");
-                    }
-                    // No actual change needed to internalCurrentInput, it's already base-10 string.
-                } catch(e) {
-                    console.error("Error handling value switching from Programmer:", e);
+                    let numStr = internalCurrentInput.includes('.') ? internalCurrentInput : internalCurrentInput + ".0";
+                    const num = parseFloat(numStr);
+                    internalCurrentInput = Math.trunc(num).toString();
+                    BigInt(internalCurrentInput); // Validate
+                } catch (e) {
+                    console.error("Error truncating/validating for Programmer mode:", e, internalCurrentInput);
                     internalCurrentInput = '0'; // Reset on error
                 }
+            } else if ((newMode === 'standard' || newMode === 'scientific') && oldMode === 'programmer') {
+                // Warn about potential precision loss from large BigInt
+                try {
+                    const num = BigInt(internalCurrentInput);
+                    if (num > Number.MAX_SAFE_INTEGER || num < Number.MIN_SAFE_INTEGER) {
+                        console.warn("Large integer from Programmer mode may lose precision.");
+                    }
+                } catch(e) {
+                    console.error("Error handling value switch from Programmer:", e);
+                    internalCurrentInput = '0';
+                }
             }
-            // If switching between Standard and Scientific, no value adjustment is needed.
         }
 
-
-        // --- Update Base and Display ---
-        // Ensure correct base is selected visually and buttons are updated
+        // Update Base and Display
         if (newMode !== 'programmer') {
-            changeBase(10); // Force base 10 if not programmer
+            changeBase(10);
         } else if (![2, 8, 10, 16].includes(currentBase)) {
-            changeBase(10); // Default to DEC if entering programmer with invalid base
+            changeBase(10);
         } else {
-            changeBase(currentBase); // Re-apply current base visuals & button states
+            changeBase(currentBase); // Re-apply current base visuals
         }
-
-        // Crucially, call updateDisplay *after* potential value adjustment and base change
-        updateDisplay();
-        // updateButtonStates(); // Called within updateDisplay
-
-    }
+        updateDisplay(); // Update display AFTER value adjustments and base change
+    } // End of changeMode function
 
     function changeBase(newBase) {
         currentBase = parseInt(newBase);
@@ -345,86 +342,121 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Utility Functions ---
-    function getBaseName(base) { /* ... same as before ... */
-        switch (base) { case 16: return 'HEX'; case 2: return 'BIN'; case 8: return 'OCT'; default: return 'DEC'; }
-    }
-    function isValidForBase(digit, base) { /* ... same as before ... */
-        if (!digit) return false; const upperDigit = digit.toUpperCase();
-        if (base === 16) return /^[0-9A-F]$/.test(upperDigit); if (base === 10) return /^[0-9]$/.test(upperDigit);
-        if (base === 8) return /^[0-7]$/.test(upperDigit); if (base === 2) return /^[01]$/.test(upperDigit); return false;
-    }
-    function degreesToRadians(degrees) { /* ... same as before ... */ return degrees * (Math.PI / 180); }
-    function handlePi() { if (currentMode === 'programmer') return; internalCurrentInput = Math.PI.toString(); shouldResetScreen = false; updateDisplay(); }
-    function toggleSign() { /* ... same logic as before using BigInt or parseFloat ... */
+    function getBaseName(base) { switch (base) { case 16: return 'HEX'; case 2: return 'BIN'; case 8: return 'OCT'; default: return 'DEC'; } }
+    function isValidForBase(digit, base) { if (!digit) return false; const upperDigit = digit.toUpperCase(); if (base === 16) return /^[0-9A-F]$/.test(upperDigit); if (base === 10) return /^[0-9]$/.test(upperDigit); if (base === 8) return /^[0-7]$/.test(upperDigit); if (base === 2) return /^[01]$/.test(upperDigit); return false; }
+    function degreesToRadians(degrees) { return degrees * (Math.PI / 180); }
+    function handlePi() { if (currentMode === 'programmer') return; internalCurrentInput = formatResult(Math.PI); shouldResetScreen = true; updateDisplay(); } // Use formatResult for Pi too
+    function toggleSign() {
         if (internalCurrentInput === 'Error' || internalCurrentInput === '0') return;
         try {
             if (currentMode === 'programmer') internalCurrentInput = (BigInt(internalCurrentInput) * -1n).toString();
             else internalCurrentInput = (parseFloat(internalCurrentInput) * -1).toString();
+            // We don't format here, just toggling sign of the internal value
         } catch (e) { console.error("Error toggling sign:", e); internalCurrentInput = 'Error'; }
         updateDisplay();
     }
 
     // --- Button State Management ---
-    function updateButtonStates() { /* ... same logic as before ... */
+    function updateButtonStates() {
         const isError = internalCurrentInput === 'Error';
+        const waitingForSecondOperand = (operation !== null && shouldResetScreen);
+
         allButtons.forEach(button => {
-            const action = button.dataset.action; const value = button.dataset.value; let disabled = false;
+            const action = button.dataset.action;
+            const value = button.dataset.value;
+            let disabled = false;
+
             if (isError && !['clear'].includes(action)) { disabled = true; }
             else if (currentMode === 'programmer') {
                 if (action === 'decimal' || action === 'pi' || value === 'pow' || ['sin', 'cos', 'tan', 'log', 'ln', 'sqrt'].includes(value)) disabled = true;
                 if (action === 'number' && !isValidForBase(value, currentBase)) disabled = true;
-            } else {
-                if (action === 'bitwise' || button.classList.contains('hex-digit')) disabled = true;
-                if (action === 'decimal' && internalCurrentInput.includes('.')) disabled = true;
+                if (action === 'sign' && internalCurrentInput === '0') disabled = true; // Disable +/- for 0 in prog mode?
+            } else { // Standard or Scientific
+                if (action === 'bitwise' || button.classList.contains('hex-digit') || value === '~') disabled = true; // Disable prog features
+                if (action === 'decimal' && internalCurrentInput.includes('.') && !shouldResetScreen) disabled = true; // Disable decimal if already present in current number
+                if (action === 'sign' && internalCurrentInput === '0') disabled = true; // Disable +/- for 0
             }
-            if (action === 'equals' && (operation === null || internalPreviousInput === '' || shouldResetScreen)) { disabled = true; } // Also disable if waiting for 2nd operand
+            // Disable equals unless ready for calculation
+            if (action === 'equals' && (operation === null || internalPreviousInput === '' || shouldResetScreen)) {
+                disabled = true;
+            }
+            // Disable operators if waiting for second operand (prevents e.g., 5 + + 3)
+            // Although chooseOperation handles chaining, this provides visual feedback.
+            if ((action === 'operator' || action === 'bitwise') && waitingForSecondOperand) {
+                // Maybe allow changing operator? For now, disable.
+                // disabled = true;
+            }
+
+
             button.disabled = disabled;
 
-            // Hide/Show based on mode
-            if (currentMode !== 'scientific' && button.classList.contains('scientific-feature')) button.classList.add('hidden');
-            else if (currentMode === 'scientific' && button.classList.contains('scientific-feature')) button.classList.remove('hidden');
-            if (currentMode !== 'programmer' && button.classList.contains('programmer-feature')) button.classList.add('hidden');
-            else if (currentMode === 'programmer' && button.classList.contains('programmer-feature')) button.classList.remove('hidden');
+            // Hide/Show based on mode needs to be handled carefully with layout
+            // CSS is likely handling visibility based on classes now
         });
     }
 
 
     // --- Event Listeners Setup ---
-    buttonsContainer.addEventListener('click', (event) => { /* ... same logic as before ... */
-        const target = event.target; if (!target.matches('button') || target.disabled) return;
-        const action = target.dataset.action; const value = target.dataset.value;
+    buttonsContainer.addEventListener('click', (event) => {
+        const target = event.target;
+        if (!target.matches('button') || target.disabled) return;
+        const action = target.dataset.action;
+        const value = target.dataset.value;
+
         switch (action) {
-            case 'number': appendNumber(value); break; case 'decimal': appendDecimal(); break;
+            case 'number': appendNumber(value); break;
+            case 'decimal': appendDecimal(); break;
             case 'operator': case 'bitwise': chooseOperation(value); break;
-            case 'function': handleFunction(value); break; case 'pi': handlePi(); break;
-            case 'sign': toggleSign(); break; case 'parenthesis': console.warn("Parenthesis logic not implemented"); break;
-            case 'equals': calculate(); break; case 'clear': clearAll(); break; case 'delete': deleteLast(); break;
+            case 'function': handleFunction(value); break;
+            case 'pi': handlePi(); break;
+            case 'sign': toggleSign(); break;
+            case 'parenthesis': console.warn("Parenthesis logic not implemented"); break;
+            case 'equals': calculate(); break;
+            case 'clear': clearAll(); break;
+            case 'delete': deleteLast(); break;
             default: console.log('Unknown button action:', action);
         }
     });
     modeSelect.addEventListener('change', (event) => changeMode(event.target.value));
     baseButtons.forEach(button => button.addEventListener('click', (event) => changeBase(event.target.dataset.base)));
 
-    // --- Keyboard Support ---
-    const keyMap = { /* ... same keyMap as before ... */
-        '0': { action: 'number', value: '0' }, '1': { action: 'number', value: '1' }, '2': { action: 'number', value: '2' }, '3': { action: 'number', value: '3' }, '4': { action: 'number', value: '4' }, '5': { action: 'number', value: '5' }, '6': { action: 'number', value: '6' }, '7': { action: 'number', value: '7' }, '8': { action: 'number', value: '8' }, '9': { action: 'number', value: '9' },
-        'a': { action: 'number', value: 'A' }, 'b': { action: 'number', value: 'B' }, 'c': { action: 'number', value: 'C' }, 'd': { action: 'number', value: 'D' }, 'e': { action: 'number', value: 'E' }, 'f': { action: 'number', value: 'F' }, 'A': { action: 'number', value: 'A' }, 'B': { action: 'number', value: 'B' }, 'C': { action: 'number', value: 'C' }, 'D': { action: 'number', value: 'D' }, 'E': { action: 'number', value: 'E' }, 'F': { action: 'number', value: 'F' },
-        '.': { action: 'decimal', value: '.' }, '+': { action: 'operator', value: '+' }, '-': { action: 'operator', value: '-' }, '*': { action: 'operator', value: '*' }, '/': { action: 'operator', value: '/' },
-        'Enter': { action: 'equals' }, '=': { action: 'equals' }, 'Backspace': { action: 'delete' }, 'Delete': { action: 'delete' }, 'Escape': { action: 'clear' },
-        '&': { action: 'bitwise', value: '&' }, '|': { action: 'bitwise', value: '|' },
-        '^': { action: 'bitwise', value: '^' }, // Map ^ to XOR (requires prog mode check below)
-        '~': { action: 'bitwise', value: '~' }, // Map ~ to NOT (requires prog mode check below)
-        'p': { action: 'operator', value: 'pow'}, '%': { action: 'operator', value: '%' },
-        'r': { action: 'function', value: 'sqrt'}, 'l': { action: 'function', value: 'log'}, 'n': { action: 'function', value: 'ln'}, '(': { action: 'parenthesis', value: '(' }, ')': { action: 'parenthesis', value: ')' }
-    };
-    function findButton(action, value) { /* ... same as before ... */
-        for (let button of allButtons) { if (button.dataset.action === action && button.dataset.value === value) return button; if (button.dataset.action === action && value === undefined && button.dataset.value === undefined) return button; }
-        if (action === 'equals') return document.querySelector('.buttons button[data-action="equals"]'); if (action === 'clear') return document.querySelector('.buttons button[data-action="clear"]'); if (action === 'delete') return document.querySelector('.buttons button[data-action="delete"]'); return null;
+    // --- Theme Handling ---
+    function applyTheme(isDark) {
+        bodyElement.classList.toggle('dark-mode', isDark);
+        themeCheckbox.checked = isDark;
     }
-    window.addEventListener('keydown', (event) => { /* ... same logic as before, including checks for ^ and ~ in programmer mode ... */
+    themeCheckbox.addEventListener('change', (event) => {
+        applyTheme(event.target.checked);
+        localStorage.setItem('theme', event.target.checked ? 'dark' : 'light');
+    });
+    const savedTheme = localStorage.getItem('theme');
+    applyTheme(savedTheme === 'dark'); // Apply saved theme or default to light
+
+
+    // --- Keyboard Support ---
+    const keyMap = {
+        '0':{action:'number',value:'0'},'1':{action:'number',value:'1'},'2':{action:'number',value:'2'},'3':{action:'number',value:'3'},'4':{action:'number',value:'4'},'5':{action:'number',value:'5'},'6':{action:'number',value:'6'},'7':{action:'number',value:'7'},'8':{action:'number',value:'8'},'9':{action:'number',value:'9'},
+        'a':{action:'number',value:'A'},'b':{action:'number',value:'B'},'c':{action:'number',value:'C'},'d':{action:'number',value:'D'},'e':{action:'number',value:'E'},'f':{action:'number',value:'F'},'A':{action:'number',value:'A'},'B':{action:'number',value:'B'},'C':{action:'number',value:'C'},'D':{action:'number',value:'D'},'E':{action:'number',value:'E'},'F':{action:'number',value:'F'},
+        '.':{action:'decimal',value:'.'},'+':{action:'operator',value:'+'},'-':{action:'operator',value:'-'},'*':{action:'operator',value:'*'},'/':{action:'operator',value:'/'},
+        'Enter':{action:'equals'},'=':{action:'equals'},'Backspace':{action:'delete'},'Delete':{action:'delete'},'Escape':{action:'clear'},
+        '&':{action:'bitwise',value:'&'},'|':{action:'bitwise',value:'|'},'^':{action:'bitwise',value:'^'},'~':{action:'bitwise',value:'~'},
+        'p':{action:'operator',value:'pow'},'%':{action:'operator',value:'%'},
+        'r':{action:'function',value:'sqrt'},'l':{action:'function',value:'log'},'n':{action:'function',value:'ln'},'(': { action: 'parenthesis', value: '(' }, ')': { action: 'parenthesis', value: ')' },
+        '<': {action: 'bitwise', value: '<<'}, '>': {action: 'bitwise', value: '>>'} // Shift keys might require Shift modifier check
+    };
+    function findButton(action, value) {
+        for(let btn of allButtons) { if(btn.dataset.action === action && btn.dataset.value === value) return btn; if(btn.dataset.action === action && value===undefined && btn.dataset.value===undefined) return btn;}
+        if (action === 'equals') return document.querySelector('.buttons button[data-action="equals"]');
+        if (action === 'clear') return document.querySelector('.buttons button[data-action="clear"]');
+        if (action === 'delete') return document.querySelector('.buttons button[data-action="delete"]');
+        return null;
+    }
+    window.addEventListener('keydown', (event) => {
         const key = event.key; let mappedAction = keyMap[key];
-        if (key === '^' && currentMode === 'programmer') mappedAction = { action: 'bitwise', value: '^' };
-        else if (key === '~' && currentMode === 'programmer') mappedAction = { action: 'bitwise', value: '~' };
+        // Mode-specific key overrides
+        if (currentMode === 'programmer'){ if(key==='^') mappedAction={action:'bitwise',value:'^'}; if(key==='~') mappedAction={action:'bitwise',value:'~'}; if(key==='<') mappedAction={action:'bitwise',value:'<<'}; if(key==='>') mappedAction={action:'bitwise',value:'>>'}; }
+        else { if(key==='p') mappedAction={action:'operator',value:'pow'}; /* Map p to power if not programmer */ }
+
         if (mappedAction) {
             const targetButton = findButton(mappedAction.action, mappedAction.value);
             if (targetButton && !targetButton.disabled && !targetButton.classList.contains('hidden')) {
@@ -435,6 +467,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // --- Initial Setup ---
-    changeMode('standard');
+    changeMode('standard'); // Initialize in standard mode
 
 }); // End DOMContentLoaded

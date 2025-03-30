@@ -1,35 +1,81 @@
 /* style.css */
+
+:root {
+    --body-bg: linear-gradient(to right, #ece9e6, #ffffff);
+    --calc-bg: #e0e0e0;
+    --calc-shadow1: rgba(0, 0, 0, 0.2);
+    --calc-shadow2: rgba(255, 255, 255, 0.7);
+    --display-bg: #d3d3d3;
+    --display-text: #333;
+    --mode-text: #555;
+    --controls-bg: #d8d8d8;
+    --controls-border: #ccc;
+    --button-bg: #f0f0f0;
+    --button-text: #333;
+    --button-hover-bg: #d8d8d8;
+    --button-active-bg: #c0c0c0;
+    --button-shadow: inset 2px 2px 5px rgba(0,0,0,0.1);
+    --operator-bg: #e8e8e8;
+    --special-op-bg: #d6d6d6; /* AC, DEL */
+    --equals-bg: #ff9f0a;
+    --equals-text: white;
+    --equals-hover-bg: #f5b041;
+    --equals-active-bg: #e08e0b;
+    --disabled-bg: #f8f8f8;
+    --disabled-text: #aaa;
+    --grid-gap-bg: #c0c0c0;
+    --prog-hex-bg: #ddeeff;
+    --prog-hex-hover-bg: #cce7ff;
+    --base-btn-bg: #f0f0f0;
+    --base-btn-border: #ccc;
+    --base-btn-active-bg: #a0a0a0;
+    --base-btn-active-text: white;
+    --base-btn-active-border: #888;
+    --switch-bg: #ccc;
+    --switch-slider-bg: white;
+    --switch-icon-opacity: 0;
+    --switch-sun-opacity: 1;
+    --transition-speed: 0.3s;
+}
+
 body {
     display: flex;
     justify-content: center;
     align-items: center;
     min-height: 100vh;
-    background: linear-gradient(to right, #ece9e6, #ffffff);
+    background: var(--body-bg);
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    transition: background-color var(--transition-speed) ease;
 }
 
 .calculator {
-    background-color: #e0e0e0;
+    background-color: var(--calc-bg);
     border-radius: 15px;
-    box-shadow: 5px 5px 15px rgba(0, 0, 0, 0.2),
-    -5px -5px 15px rgba(255, 255, 255, 0.7);
+    box-shadow: 5px 5px 15px var(--calc-shadow1),
+    -5px -5px 15px var(--calc-shadow2);
     overflow: hidden;
     width: 90%;
-    max-width: 450px; /* Slightly wider potentially needed */
+    max-width: 450px; /* Adjusted max width */
+    transition: background-color var(--transition-speed) ease, box-shadow var(--transition-speed) ease;
 }
 
 .display {
-    background-color: #d3d3d3;
+    position: relative;
+    background-color: var(--display-bg);
     padding: 20px;
+    padding-top: 40px; /* Add padding top to avoid switch overlap */
     text-align: right;
-    border-bottom: 1px solid #c0c0c0;
+    border-bottom: 1px solid var(--controls-border);
+    transition: background-color var(--transition-speed) ease, border-color var(--transition-speed) ease;
 }
 
 .display .mode-display {
+    position: absolute; /* Position mode display */
+    top: 10px;
+    left: 15px;
     font-size: 0.8em;
-    color: #555;
-    margin-bottom: 5px;
-    text-align: left;
+    color: var(--mode-text);
+    transition: color var(--transition-speed) ease;
 }
 
 #screen {
@@ -39,10 +85,11 @@ body {
     font-size: 2.5em;
     padding: 10px 0;
     text-align: right;
-    color: #333;
+    color: var(--display-text);
     box-sizing: border-box;
-    min-height: 50px; /* Ensure min height */
-    word-wrap: break-word; /* Wrap long numbers */
+    min-height: 50px;
+    word-wrap: break-word;
+    transition: color var(--transition-speed) ease;
 }
 
 .controls {
@@ -50,109 +97,283 @@ body {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    background-color: #d8d8d8;
+    background-color: var(--controls-bg);
     font-size: 0.9em;
-    flex-wrap: wrap; /* Allow wrapping */
+    flex-wrap: wrap;
     gap: 10px;
+    transition: background-color var(--transition-speed) ease;
 }
 
-/* ... (rest of controls styles same as before) ... */
+.controls label { margin-right: 5px; }
+.controls select {
+    padding: 5px;
+    border-radius: 5px;
+    border: 1px solid var(--controls-border);
+}
+
+#base-controls { display: flex; gap: 5px; }
+#base-controls button {
+    padding: 3px 8px;
+    font-size: 0.8em;
+    border: 1px solid var(--base-btn-border);
+    background-color: var(--base-btn-bg);
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background-color var(--transition-speed) ease, border-color var(--transition-speed) ease;
+}
 #base-controls button.active {
-    background-color: #a0a0a0;
-    color: white;
+    background-color: var(--base-btn-active-bg);
+    color: var(--base-btn-active-text);
     font-weight: bold;
-    border-color: #888;
+    border-color: var(--base-btn-active-border);
 }
-
 
 .buttons {
     display: grid;
-    /* Use 4 columns consistently */
-    grid-template-columns: repeat(4, 1fr);
+    /* Define a robust grid structure */
+    grid-template-columns: repeat(5, 1fr); /* Start with 5 columns for Sci/Prog flexibility */
     gap: 1px;
-    background-color: #c0c0c0;
+    background-color: var(--grid-gap-bg);
 }
 
+/* Default button styles */
 .buttons button {
-    background-color: #f0f0f0;
+    background-color: var(--button-bg);
     border: none;
-    padding: 18px; /* Adjust padding as needed */
-    font-size: 1.1em; /* Adjust font size */
+    padding: 18px; /* Default padding */
+    font-size: 1.1em;
     cursor: pointer;
-    transition: background-color 0.2s ease;
-    color: #333;
-    min-height: 50px; /* Ensure buttons have height */
-    display: flex; /* Center content */
+    color: var(--button-text);
+    min-height: 50px;
+    display: flex;
     justify-content: center;
     align-items: center;
-}
-/* ... (hover, active styles same as before) ... */
-
-/* --- Explicit Column Placement --- */
-/* Force main operators to the last column */
-.buttons button.operator[data-value="/"],
-.buttons button.operator[data-value="*"],
-.buttons button.operator[data-value="-"],
-.buttons button.operator[data-value="+"] {
-    grid-column: 4 / 5; /* Place in the 4th column */
-    background-color: #e8e8e8; /* Operator style */
+    transition: background-color var(--transition-speed) ease, color var(--transition-speed) ease;
+    grid-column: auto / span 1; /* Default span */
+    grid-row: auto / span 1; /* Default span */
 }
 
-/* Place Equals button */
-.buttons button.equals {
-    /* Make it span maybe? Or just place it */
-    grid-column: 4 / 5; /* Place in 4th column, below '+' */
-    /* grid-row: span 1; */ /* Adjust row span if needed */
-    background-color: #ff9f0a;
-    color: white;
+/* Ensure hidden buttons don't take up visual space but keep grid structure */
+.buttons button.hidden {
+    display: none; /* Completely remove from layout */
+    /* visibility: hidden; /* Alt: Keeps space, might be worse */
+    /* pointer-events: none; */
 }
-.buttons button.equals:hover { background-color: #f5b041; }
-.buttons button.equals:active { background-color: #e08e0b; }
 
 
-/* Standard Button Styles */
+/* --- Specific Button Placements & Spans (CRITICAL for Layout) --- */
+
+/* Scientific & Programmer Top Rows (5 columns) */
+.buttons .scientific-feature,
+.buttons .programmer-feature:not(.hex-digit):not([data-value="~"]) { /* Target top prog buttons */
+    /* These naturally flow into the 5 columns */
+}
+
+/* Programmer Hex Digits (may need specific placing if 5 columns aren't enough) */
+.buttons .hex-digit {
+    background-color: var(--prog-hex-bg);
+}
+.buttons .hex-digit:hover { background-color: var(--prog-hex-hover-bg); }
+/* If hex digits need their own row / spanning: */
+.buttons button[data-value="A"] { grid-column: 1 / 2; } /* Example placing */
+.buttons button[data-value="B"] { grid-column: 2 / 3; }
+.buttons button[data-value="C"] { grid-column: 3 / 4; }
+.buttons button[data-value="D"] { grid-column: 4 / 5; }
+.buttons button[data-value="E"] { grid-column: 5 / 6; }
+.buttons button[data-value="F"] { grid-column: 1 / 2; grid-row: auto; } /* Example wrap */
+
+/* STANDARD Buttons - Force into 4-column layout within the 5-column grid */
+/* Place standard buttons explicitly, assuming they start after the feature rows */
+.buttons button[data-value="~"] { grid-column: 1 / 2; } /* Prog NOT */
+.buttons button[data-action="clear"] { grid-column: 2 / 3; }
+.buttons button[data-action="delete"] { grid-column: 3 / 4; }
+.buttons button[data-value="/"] { grid-column: 5 / 6; } /* OPERATOR Col 5 */
+
+.buttons button[data-value="7"] { grid-column: 1 / 2; }
+.buttons button[data-value="8"] { grid-column: 2 / 3; }
+.buttons button[data-value="9"] { grid-column: 3 / 4; }
+.buttons button[data-value="*"] { grid-column: 5 / 6; } /* OPERATOR Col 5 */
+
+.buttons button[data-value="4"] { grid-column: 1 / 2; }
+.buttons button[data-value="5"] { grid-column: 2 / 3; }
+.buttons button[data-value="6"] { grid-column: 3 / 4; }
+.buttons button[data-value="-"] { grid-column: 5 / 6; } /* OPERATOR Col 5 */
+
+.buttons button[data-value="1"] { grid-column: 1 / 2; }
+.buttons button[data-value="2"] { grid-column: 2 / 3; }
+.buttons button[data-value="3"] { grid-column: 3 / 4; }
+.buttons button[data-value="+"] { grid-column: 5 / 6; } /* OPERATOR Col 5 */
+
+.buttons button[data-action="sign"] { grid-column: 1 / 2; }
+.buttons button[data-value="0"] { grid-column: 2 / 3; }
+.buttons button[data-action="decimal"] { grid-column: 3 / 4; }
+.buttons button[data-action="equals"] { grid-column: 5 / 6; } /* EQUALS Col 5 */
+
+
+/* Standard Operator Styling */
+.buttons button.operator { background-color: var(--operator-bg); }
 .buttons button[data-action="clear"],
-.buttons button[data-action="delete"] {
-    background-color: #d6d6d6;
+.buttons button[data-action="delete"] { background-color: var(--special-op-bg); }
+.buttons button.equals {
+    background-color: var(--equals-bg);
+    color: var(--equals-text);
 }
+.buttons button.equals:hover { background-color: var(--equals-hover-bg); }
+.buttons button.equals:active { background-color: var(--equals-active-bg); }
 
-/* Programmer Hex Digit Styling (Optional) */
-.buttons button.hex-digit {
-    background-color: #ddeeff; /* Light blueish */
+/* Hover/Active base styles */
+.buttons button:hover:not(:disabled) {
+    background-color: var(--button-hover-bg);
 }
-.buttons button.hex-digit:hover {
-    background-color: #cce7ff;
-}
-
-/* Visibility class */
-.hidden {
-    display: none !important;
+.buttons button:active:not(:disabled) {
+    background-color: var(--button-active-bg);
+    box-shadow: var(--button-shadow);
 }
 
 /* Disabled state */
 .buttons button:disabled {
-    background-color: #f8f8f8 !important; /* Use important to override specific styles */
-    color: #aaa !important;
+    background-color: var(--disabled-bg) !important;
+    color: var(--disabled-text) !important;
     cursor: not-allowed;
+}
+
+/* --- Theme Switch Styles --- */
+.theme-switch-wrapper {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    z-index: 10;
+}
+.theme-switch { position: relative; display: inline-block; width: 50px; height: 26px; }
+.theme-switch input { opacity: 0; width: 0; height: 0; }
+.slider {
+    position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+    background-color: var(--switch-bg); transition: var(--transition-speed);
+    display: flex; align-items: center;
+}
+.slider:before {
+    position: absolute; content: ""; height: 18px; width: 18px; left: 4px; bottom: 4px;
+    background-color: var(--switch-slider-bg); transition: var(--transition-speed);
+}
+.slider .icon { position: absolute; font-size: 14px; opacity: var(--switch-icon-opacity); transition: opacity var(--transition-speed) ease; user-select: none; }
+.slider .sun { left: 5px; opacity: var(--switch-sun-opacity); }
+.slider .moon { right: 5px; }
+input:checked + .slider:before { transform: translateX(24px); }
+.slider.round { border-radius: 34px; }
+.slider.round:before { border-radius: 50%; }
+
+/* --- Dark Mode Theme --- */
+body.dark-mode {
+    --body-bg: linear-gradient(to right, #232526, #414345);
+    --calc-bg: #3a3d40;
+    --calc-shadow1: rgba(0, 0, 0, 0.4);
+    --calc-shadow2: rgba(255, 255, 255, 0.1);
+    --display-bg: #2a2c2f;
+    --display-text: #e0e0e0;
+    --mode-text: #aaa;
+    --controls-bg: #333639;
+    --controls-border: #555;
+    --button-bg: #505356;
+    --button-text: #e0e0e0;
+    --button-hover-bg: #606366;
+    --button-active-bg: #45484b;
+    --button-shadow: inset 2px 2px 5px rgba(0,0,0,0.3);
+    --operator-bg: #4a4d50;
+    --special-op-bg: #606366;
+    --equals-bg: #e69500;
+    --equals-text: #111;
+    --equals-hover-bg: #f5b041;
+    --equals-active-bg: #d08500;
+    --disabled-bg: #404346; /* No !important here, specificity should handle */
+    --disabled-text: #888; /* No !important here */
+    --grid-gap-bg: #2a2c2f;
+    --prog-hex-bg: #3a5a78;
+    --prog-hex-hover-bg: #4a6a88;
+    --base-btn-bg: #505356;
+    --base-btn-border: #666;
+    --base-btn-active-bg: #777a7d;
+    --base-btn-active-text: #eee;
+    --base-btn-active-border: #888;
+    --switch-bg: #555;
+    --switch-slider-bg: #ccc;
+    --switch-icon-opacity: 1; /* Moon visible */
+    --switch-sun-opacity: 0; /* Sun hidden */
+}
+
+body.dark-mode select { background-color: #505356; color: #e0e0e0; border-color: #666; }
+/* Ensure dark disabled overrides base disabled */
+body.dark-mode .buttons button:disabled {
+    background-color: var(--disabled-bg) !important;
+    color: var(--disabled-text) !important;
 }
 
 
 /* Responsive adjustments */
-@media (max-width: 420px) {
-    .calculator {
-        width: 95%;
-        border-radius: 10px;
+@media (max-width: 480px) { /* Slightly larger breakpoint */
+    .calculator { width: 95%; border-radius: 10px; max-width: none; }
+    #screen { font-size: 2em; }
+    .buttons button { padding: 15px; font-size: 1em; }
+    .controls { flex-direction: column; align-items: stretch; gap: 8px; }
+    #base-controls { justify-content: center; }
+    .display { padding-top: 50px; } /* More space for switch + mode */
+    .display .mode-display { top: 35px; left: 10px; /* Adjust position */ }
+
+    /* Adjust grid columns for smaller screens if 5 is too wide */
+    .buttons { grid-template-columns: repeat(4, 1fr); } /* Force 4 columns on small screens */
+
+    /* Re-evaluate placements for 4 columns */
+    /* --- Standard Buttons 4-col --- */
+    .buttons button[data-value="~"] { grid-column: 1 / 2; }
+    .buttons button[data-action="clear"] { grid-column: 2 / 3; }
+    .buttons button[data-action="delete"] { grid-column: 3 / 4; }
+    .buttons button[data-value="/"] { grid-column: 4 / 5; } /* OPERATOR Col 4 */
+
+    .buttons button[data-value="7"] { grid-column: 1 / 2; }
+    .buttons button[data-value="8"] { grid-column: 2 / 3; }
+    .buttons button[data-value="9"] { grid-column: 3 / 4; }
+    .buttons button[data-value="*"] { grid-column: 4 / 5; } /* OPERATOR Col 4 */
+
+    .buttons button[data-value="4"] { grid-column: 1 / 2; }
+    .buttons button[data-value="5"] { grid-column: 2 / 3; }
+    .buttons button[data-value="6"] { grid-column: 3 / 4; }
+    .buttons button[data-value="-"] { grid-column: 4 / 5; } /* OPERATOR Col 4 */
+
+    .buttons button[data-value="1"] { grid-column: 1 / 2; }
+    .buttons button[data-value="2"] { grid-column: 2 / 3; }
+    .buttons button[data-value="3"] { grid-column: 3 / 4; }
+    .buttons button[data-value="+"] { grid-column: 4 / 5; } /* OPERATOR Col 4 */
+
+    .buttons button[data-action="sign"] { grid-column: 1 / 2; }
+    .buttons button[data-value="0"] { grid-column: 2 / 3; }
+    .buttons button[data-action="decimal"] { grid-column: 3 / 4; }
+    .buttons button[data-action="equals"] { grid-column: 4 / 5; } /* EQUALS Col 4 */
+
+    /* How to handle Sci/Prog buttons in 4 cols? Maybe fewer visible? Or more rows */
+    /* Example: Force Sci/Prog into 4 columns */
+    .buttons .scientific-feature,
+    .buttons .programmer-feature:not(.hex-digit) {
+        /* Adjust placement if needed when forced to 4 cols */
     }
-    #screen {
-        font-size: 2em;
+    .buttons .hex-digit {
+        /* Adjust placement for 4 cols */
+        /* e.g., grid-column: auto; */ /* Let them flow naturally */
     }
-    .buttons button {
-        padding: 15px;
-        font-size: 1em;
-    }
-    .controls {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 8px;
-    }
+}
+
+/* Keypress feedback */
+.buttons button.active-keypress {
+    /* Example: slightly darker active state */
+    background-color: var(--button-active-bg);
+    filter: brightness(0.9);
+}
+
+/* Add this rule to style.css */
+
+.controls > .hidden {
+    display: none !important; /* Be more specific for direct children of .controls */
+}
+
+/* Ensure the general .hidden rule still exists */
+.hidden {
+    display: none !important;
 }

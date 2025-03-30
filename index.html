@@ -6,9 +6,21 @@
     <title>Modern Calculator</title>
     <link rel="stylesheet" href="style.css">
 </head>
-<body>
+<body> <!-- Body tag needed for theme class -->
 <div class="calculator">
     <div class="display">
+        <!-- Theme Switch -->
+        <div class="theme-switch-wrapper">
+            <label class="theme-switch" for="theme-checkbox" title="Toggle Dark/Light Theme">
+                <input type="checkbox" id="theme-checkbox" />
+                <div class="slider round">
+                    <span class="icon sun">☀️</span>
+                    <span class="icon moon">🌙</span>
+                </div>
+            </label>
+        </div>
+        <!-- End Theme Switch -->
+
         <div class="mode-display">Mode: <span id="current-mode">Standard</span> | Base: <span id="current-base">DEC</span></div>
         <input type="text" id="screen" value="0" disabled>
     </div>
@@ -50,10 +62,10 @@
         <button class="scientific-feature hidden" data-action="parenthesis" data-value="(">(</button>
         <button class="scientific-feature hidden" data-action="parenthesis" data-value=")">)</button>
         <button class="programmer-feature hidden" data-action="bitwise" data-value="^">XOR</button> <!-- Prog -->
-        <button class="programmer-feature hidden" data-action="bitwise" data-value="~">NOT</button> <!-- Prog -->
+        <!-- Removed NOT from here to place near standard ops if needed, or keep separate -->
 
         <!-- Row 4: Programmer Hex Group -->
-        <!-- This row ONLY appears in Programmer mode -->
+        <!-- This row might span more columns or be structured differently if needed -->
         <button class="programmer-feature hidden hex-digit" data-action="number" data-value="A">A</button>
         <button class="programmer-feature hidden hex-digit" data-action="number" data-value="B">B</button>
         <button class="programmer-feature hidden hex-digit" data-action="number" data-value="C">C</button>
@@ -61,36 +73,37 @@
         <button class="programmer-feature hidden hex-digit" data-action="number" data-value="E">E</button>
         <button class="programmer-feature hidden hex-digit" data-action="number" data-value="F">F</button>
 
-        <!-- Row 5: Standard Top Row (Shared) -->
-        <button data-action="clear" class="span-2">AC</button> <!-- Span 2 columns -->
-        <!-- <button data-action="placeholder" class="hidden"></button> --> <!-- Placeholder if needed -->
-        <button data-action="delete">DEL</button>
-        <button data-action="operator" data-value="/" class="operator">÷</button>
 
-        <!-- Row 6: Standard Numbers / Operator (Shared) -->
+        <!-- STANDARD LAYOUT STARTS HERE (4 columns wide) -->
+        <!-- Row 5 -->
+        <button class="programmer-feature hidden" data-action="bitwise" data-value="~">NOT</button> <!-- Prog NOT -->
+        <button data-action="clear">AC</button>
+        <button data-action="delete">DEL</button>
+        <button data-action="operator" data-value="/" class="operator">÷</button> <!-- Operator Col 4 -->
+
+        <!-- Row 6 -->
         <button data-action="number" data-value="7" class="digit">7</button>
         <button data-action="number" data-value="8" class="digit">8</button>
         <button data-action="number" data-value="9" class="digit">9</button>
-        <button data-action="operator" data-value="*" class="operator">×</button>
+        <button data-action="operator" data-value="*" class="operator">×</button> <!-- Operator Col 4 -->
 
-        <!-- Row 7: Standard Numbers / Operator (Shared) -->
+        <!-- Row 7 -->
         <button data-action="number" data-value="4" class="digit">4</button>
         <button data-action="number" data-value="5" class="digit">5</button>
         <button data-action="number" data-value="6" class="digit">6</button>
-        <button data-action="operator" data-value="-" class="operator">−</button>
+        <button data-action="operator" data-value="-" class="operator">−</button> <!-- Operator Col 4 -->
 
-        <!-- Row 8: Standard Numbers / Operator (Shared) -->
+        <!-- Row 8 -->
         <button data-action="number" data-value="1" class="digit">1</button>
         <button data-action="number" data-value="2" class="digit">2</button>
         <button data-action="number" data-value="3" class="digit">3</button>
-        <button data-action="operator" data-value="+" class="operator">+</button>
+        <button data-action="operator" data-value="+" class="operator">+</button> <!-- Operator Col 4 -->
 
-        <!-- Row 9: Standard Bottom Row / Equals (Shared) -->
+        <!-- Row 9 -->
         <button data-action="sign">+/-</button>
         <button data-action="number" data-value="0" class="digit">0</button>
         <button data-action="decimal" data-value="." class="decimal">.</button>
-        <button data-action="equals" class="equals"> = </button> <!-- Removed span, placed in last col -->
-
+        <button data-action="equals" class="equals">=</button> <!-- Equals Col 4 -->
     </div>
 </div>
 
